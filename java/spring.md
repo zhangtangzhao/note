@@ -35,3 +35,4 @@ sort: 1
 详细解析bean标签-----> BeanDefinitionParserDelegate.parseBeanDefinitionElement()
 2. <context>标签 ---> 对应spring.handlers文件中ContextNamespaceHandler
 3. 自定义标签的解析逻辑：根据当前解析标签的头信息找到对应的namespaceUri，加载spring所有Jar包的spring.handlers文件并建立映射关系，根据namespaceUri从映射关系中找到对应的实现了NamespaceHandler接口的类，调用类的Init方法（注册了各种自定义标签的解析类），根据namespaceUri找到对应的解析类，然后调用Paser方法完成标签解析
+4. 自定义标签的扫描过程：doScanner方法  去扫描基本包的路径下面找class文件，递归找class文件，判断class文件里面是否有includeFilter里面的注解(@Component),封装成BeanDefinition对象
