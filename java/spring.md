@@ -33,4 +33,5 @@ sort: 1
 ## Spring解析xml文件
 1. 通过XmlBeanDefinitionReader.doLoadBeanDefinitions()利用jdk sax解析xml里面的每个元素封装到BeanDefinition对象
 详细解析bean标签-----> BeanDefinitionParserDelegate.parseBeanDefinitionElement()
-
+2. <context>标签 ---> 对应spring.handlers文件中ContextNamespaceHandler
+3. 自定义标签的解析逻辑：根据当前解析标签的头信息找到对应的namespaceUri，加载spring所有Jar包的spring.handlers文件并建立映射关系，根据namespaceUri从映射关系中找到对应的实现了NamespaceHandler接口的类，调用类的Init方法（注册了各种自定义标签的解析类），根据namespaceUri找到对应的解析类，然后调用Paser方法完成标签解析
