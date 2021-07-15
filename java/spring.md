@@ -48,3 +48,15 @@ BeanDefinitionRegistryPostProcessor  在bean的实例化之前调用，可以完
 BeanPostProcessors的接口实现类在ComponentScanBeanDefinitionParser.registerComponents（注册组件）
 AbstractApplicationContext.registerBeanPostprocessors
 然后在PostProcessorRegistrationDelegate.registerBeanPostprocessors拿到所有实现了BeanPostProcessors接口的类
+
+
+## Spring 创建Bean的过程
+
+1. AbstractAutowireCapableBeanFactory.createBeanInstance() 实例化factoryMethod方法对应的实例，实例化带有@Autowired的有参构造函数，实例化带有@Autowired的无参构造函数，实例化无参构造函数
+getFactoryMethodName ---->  定义了factory-method的属性， 定义和@Bean
+
+@Autowited注解的方法或者属性都会触发getBean操作
+
+多个@Autowired注解的有参构造函数，会根据构造函数的参数个数进行降序
+
+多个没有@Autowired注解的构造函数，只会调用默认的构造函数，利用的jdk的实例化
