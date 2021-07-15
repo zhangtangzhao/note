@@ -60,3 +60,5 @@ getFactoryMethodName ---->  定义了factory-method的属性， 定义和@Bean
 多个@Autowired注解的有参构造函数，会根据构造函数的参数个数进行降序
 
 多个没有@Autowired注解的构造函数，只会调用默认的构造函数，利用的jdk的实例化
+
+
