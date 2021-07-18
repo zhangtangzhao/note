@@ -57,17 +57,54 @@ Eventually consistent 最终一致性：所有的数据在经过一段时间的�
 | server.x:hostname:n:n:observer   | 配置observer，表示本机是一个观察者（观察者不参与事务和选举，但会转发更新请求给leader）。比如：server.4:localhost:2181:3181:observer |
 | peerType=observer   | 结合上面一条配置，表示这个zookeeper为观察者 |
 
+## zokeeper 节点状态属性
+| 属性  | 数据结构 | 描述 |
+| ----- | -------- | ---- |
+| czxid | long | 节点被创建的zxid值 |
+| mzxid | long | 节点被修改的zxid值 |
+| pzxid | long |  子节点最有一次被修改时的事务ID |
+| ctime | long | 节点被创建的时间 |
+| mtime | long | 节点被修改的时间 |
+| version | long | 节点被修改的版本号 |
+| cversion | long | 节点所拥有的子节点被修改的版本号 |
+| aversion | long | 节点的ACL被修改的版本号  |
+| emphemeralOwner | long | 如果此节点为临时节点，那么它的值为这个节点拥有者的会话ID；否则为0 |
+| dataLength | Int | 节点数据域的长度 |
+| numChildren | int | 节点拥有的子节点个数 |
+
+## zookeeper 的 ACL
+ACL机制：表示scheme:id:permissions，第一个字段表示采用哪一种机制，第二个ID表示用户，permissions表示相关权限(如只读，读写，管理等)
+scheme的取值：
+world:它下面只有一个Id，叫anyone,world:anyone代表任何人，zookeeper中对所有人有权限的节点就是属于world:anyone的
+auth: 它不需要id, 只要是通过authentication 的user 都有权限（zookeeper 支持通过kerberos来进行authencation, 也支持username/password 形式的authentication)
+digest: 它对应的id 为username:BASE64(SHA1(password))，它需要先通过username:password形式的authentication
+ip: 它对应的id 为客户机的IP 地址，设置的时候可以设置一个ip 段，比如ip:192.168.1.0/16,表示匹配前16 个bit 的IP 段
+
+## zookeeper客户端常用命令
+1. 显示根目录下、文件： ls / 使用ls 命令来查看当前ZooKeeper 中所包含的内容
+2. 显示根目录下、文件： ls2 / 查看当前节点数据并能看到更新次数等数据
+3. 创建文件，并设置初始内容： create /zk "test" 创建一个新的znode 节点“ zk ”以及与它关联的字符串[-e] [-s] 【-e 零时节点】【-s 顺序节点】
+4. 获取文件内容：get /zk 确认znode 是否包含我们所创建的字符串 [watch【] watch 监听】
+5. 修改文件内容： set /zk "zkbak" 对zk 所关联的字符串进行设置
+6. 删除文件： delete /zk 将刚才创建的znode 删除，如果存在子节点删除失败
+7. 递归删除：rmr /zk 将刚才创建的znode 删除，子节点同时删除
+8. 退出客户端： quit
+9. 帮助命令： help
+
+## zookeeper 集群的角色
+Leader 集群工作机制中的核心
+事务请求的唯一调度和处理者，保证集群事务处理的顺序性
+集群内部服务器的调度者(管理follower，数据同步)
+
+Follower 集群工作机制中的跟随者
+处理非事务请求，转发事务请求给Leader
+参与事务请求proposal投票
+参与leader选举投票
 
 
-
-
-
-
-
-
-
-
-
+Observer 3.30以上版本提供，和follower功能相同，但不参与任何形式投票
+处理非事务请求，转发事务请求给Leader
+提高集群非事务处理能力
 
 
 
