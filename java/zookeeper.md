@@ -15,8 +15,19 @@ Basically Avaliable 基本可用：当分布式系统出现不可预见的故障
 Soft state 软状态：允许系统中的数据存在中间状态，即系统的不同节点的数据副本之间的数据同步过程存在延迟，并认为这种延时不会影响系统的可用性
 Eventually consistent 最终一致性：所有的数据在经过一段时间的数据同步后，最终能够达到一个一致的状态
 
+| What    | Follows  |
+| ------- | -------- |
+| A table | A header |
+| A table | A header |
+| A table | A header |
 
+## zookeeper的配置参数
 
+| 序号 | 参数名  |
+| - | -------- |
+| 1 | A header |
+| 2 | A header |
+| 3 | A header |
 
 
 
