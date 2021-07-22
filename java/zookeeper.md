@@ -107,7 +107,22 @@ Observer 3.30以上版本提供，和follower功能相同，但不参与任何�
 提高集群非事务处理能力
 
 
+## zookeeper 消息广播模式
 
+为了保证分区容错性，zookeeper 是要让每个节点副本必须是一致的
+
+zookeeper 中消息广播的具体步骤如下：
+1. 客户端发起一个写操作请求
+2. Leader 服务器将客户端的request 请求转化为事物proposql 提案，同时为每个proposal 分
+配一个全局唯一的ID，即ZXID。
+3. leader 服务器与每个follower 之间都有一个队列，leader 将消息发送到该队列
+4. follower 机器从队列中取出消息处理完(写入本地事物日志中)毕后，向leader 服务器发送
+ACK 确认。
+5. leader 服务器收到半数以上的follower 的ACK 后，即认为可以发送commit
+6. leader 向所有的follower 服务器发送commit 消息。
+
+zookeeper 采用ZAB 协议的核心就是只要有一台服务器提交了proposal，就要确保所有的服
+务器最终都能正确提交proposal。这也是CAP/BASE 最终实现一致性的一个体现。
 
 
 
