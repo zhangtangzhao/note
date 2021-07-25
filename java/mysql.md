@@ -27,7 +27,7 @@ log_output 日志存放的地方【TABLE】【FILE】【FILE,TABLE】
 ### 执行计划 explain
 1. table： explain语句输出的每条记录都对应着某个单表的访问方法，该记录的table列代表着该表的表名
 2. id: 查询语句中每出现一个SELECT关键字，Mysql就会为它分配一个唯一的id值
-3. select_type
+3. select_type （物化表示 缓存或者临时表）
 	| 属性 | 描述 |
 	| ---- | ---- |
 	| SIMPLE | 简单的select查询，不使用union及子查询 |
@@ -67,7 +67,7 @@ log_output 日志存放的地方【TABLE】【FILE】【FILE,TABLE】
 7. key_len : 列表示当优化器决定使用某个索引执行查询时，该索引记录的最大长度
 8. ref : 当使用索引列等值匹配的条件去执行查询时，也就是在访问方法是const、eg_ref、ref、ref_or_null、unique_sutbquery、index_subopery其中之一时,ref列展示的就是与索引列作等值匹配的是谁
 9. rows : 如果查询优化器决定使用全表扫描的方式对某个表执行查询时，执行计划的rows列就代表预计需要扫描的行数，如果使用索引来执行查询时，执行计划的rows列就代表预计扫描的索引记录行数。
-10. filtered : 查询优化器预测有多少条记录满⾜其余的搜索条件
+10. filtered : 查询优化器预测有多少条记录满，其余的搜索条件
 11. Extra : Extra列是用来说明一些额外信息的，我们可以通过这些额外信息来更准确的理解MySQL到底将如何执行给定的查询语句
 			No tables used: 当查询语句的没有FROM子句时将会提示该额外信息。
 			Impossible WHERE : 查询语句的WHERE子句永远为FALSE时将会提示该额外信息。
@@ -85,13 +85,100 @@ log_output 日志存放的地方【TABLE】【FILE】【FILE,TABLE】
 			LooseScan : 在将In子查询转为semi-join时，如果采用的是LooseScan执行策略，则在驱动表执行计划的Extra列就是显示LooseScan提示。
 			FirstMatch(tbl_name) : 在将In子查询转为semi-join时，如果采用的是FirstMatch执行策略，则在被驱动表执行计划的Extra列就是显示FirstMatch(tbl_name)提示
 
+高性能索引使用策略
+1. 不在索引列上做任何操作(例如加法)
+2. 尽量全值匹配
+3. 最佳左前缀法则
+4. 范围条件放最后
+5. 覆盖索引尽量用
+6. 不等于要慎用
+7. Null/Not 有影响
+8. Like查询要当心
+9. 字符类型加引号
+10. 使用Or关键时要注意
+11. 使用索引扫描来做排序和排序
+12. ASC和DESC别混用
+13. 尽可能按主键顺序插入行
+14. 优化Count查询
+15. 优化Limit分页
 
 
+## Mysql 锁机制
 
+### Mysql 行锁
 
+行锁的劣势：开销大；加锁慢；会出现死锁
+行锁的优势：锁的粒度小，发生锁冲突的概率低；处理并发的能力强
+加锁的方式：自动加锁。对于UPDATE、DELETE和INSERT语句，InnoDB会自动给涉及数据集加排他锁；对于普通SELECT语句，InnoDB不会加任何锁；当然我们也可以显示的加锁：
+共享锁：select * from tableName where … + lock in share more
+排他锁：select * from tableName where … + for update
 
+行锁优化：
+1 尽可能让所有数据检索都通过索引来完成，避免无索引行或索引失效导致行锁升级为表锁。
+2 尽可能避免间隙锁带来的性能下降，减少或使用合理的检索范围。
+3 尽可能减少事务的粒度，比如控制事务大小，而从减少锁定资源量和时间长度，从而减少锁的竞争等，提供性能。
+4 尽可能低级别事务隔离，隔离级别越高，并发的处理能力越低。
 
+### Mysql 表锁
 
+表锁的优势：开销小；加锁快；无死锁
+表锁的劣势：锁粒度大，发生锁冲突的概率高，并发处理能力低
+加锁的方式：自动加锁。查询操作（SELECT），会自动给涉及的所有表加读锁，更新操作（UPDATE、DELETE、INSERT），会自动给涉及的表加写锁。也可以显示加锁：
+共享读锁：lock table tableName read;
+独占写锁：lock table tableName write;
+批量解锁：unlock tables;
 
+### 死锁
+表锁的优势：开销小；加锁快；无死锁
+表锁的劣势：锁粒度大，发生锁冲突的概率高，并发处理能力低
+加锁的方式：自动加锁。查询操作（SELECT），会自动给涉及的所有表加读锁，更新操作（UPDATE、DELETE、INSERT），会自动给涉及的表加写锁。也可以显示加锁：
+共享读锁：lock table tableName read;
+独占写锁：lock table tableName write;
+批量解锁：unlock tables;
+
+排查死锁
+1 查询数据库进程
+主要看State字段,如果出现大量 waiting for ..lock 即可判定死锁：
+SHOW FULL PROCESSLIST;
+
+2 查看当前的事务
+SELECT * FROM INFORMATION_SCHEMA.INNODB_TRX;
+INNODB_TRX 表包含信息关于每个事务(排除只读事务)当前执行的在InnoDB,包含是否事务是等待一个锁, 当事务启动后, SQL语句事务是正在执行
+
+INNODB_TRX Columns 相关列信息:
+a) trx_id：innodb存储引擎内部事务唯一的事务id。
+b) trx_state：当前事务的状态。
+c) trx_started：事务开始的时间。
+d) trx_requested_lock_id：等待事务的锁id，如trx_state的状态为LOCK WAIT，那么该值代表当前事务之前占用锁资源的id，如果trx_state不是LOCK WAIT的话，这个值为null。
+e) trx_wait_started：事务等待开始的时间。
+f) trx_weight：事务的权重，反映了一个事务修改和锁住的行数。在innodb的存储引擎中，当发生死锁需要回滚时，innodb存储引擎会选择该值最小的事务进行回滚。
+g) trx_mysql_thread_id：正在运行的mysql中的线程id，show full processlist显示的记录中的thread_id。
+h) trx_query：事务运行的sql语句，在实际中发现，有时会显示为null值，当为null的时候，就是t2事务中等待锁超时直接报错(ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction)后，trx_query就显示为null值
+
+3 查看当前锁定的事务
+SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCKS;
+INNODB_LOCKS 表包含信息关于每个锁一个InnoDB 事务已经请求,但是没有获得锁,每个lock一个事务持有是堵塞另外一个事务
+
+INNODB_LOCKS Columns 相关列信息:
+a) lock_id：锁的id以及被锁住的空间id编号、页数量、行数量
+b) lock_trx_id：锁的事务id。
+c) lock_mode：锁的模式。
+d) lock_type：锁的类型，表锁还是行锁
+e) lock_table：要加锁的表。
+f) lock_index：锁的索引。
+g) lock_space：innodb存储引擎表空间的id号码
+h) lock_page：被锁住的页的数量，如果是表锁，则为null值。
+i) lock_rec：被锁住的行的数量，如果表锁，则为null值。
+j) lock_data：被锁住的行的主键值，如果表锁，则为null值
+
+4 查看当前等锁的事务
+SELECT * FROM INFORMATION_SCHEMA.INNODB_LOCK_WAITS;
+INNODB_LOCK_WAITS 表包含了blocked的事务的锁等待的状态。当事务量比较少，我们可以直观的查看，当事务量非常大，锁等待也时常发生的情况下，这个时候可以通过INNODB_LOCK_WAITS表来更加直观的反映出当前的锁等待情况：
+
+INNODB_LOCK_WAITSColumns 相关列信息:
+a) requesting_trx_id：申请锁资源的事务id。
+b) requested_lock_id：申请的锁的id。
+c) blocking_trx_id：阻塞的事务id。
+d) blocking_lock_id：阻塞的锁的id。
 
 
