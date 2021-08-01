@@ -181,4 +181,12 @@ b) requested_lock_id：申请的锁的id。
 c) blocking_trx_id：阻塞的事务id。
 d) blocking_lock_id：阻塞的锁的id。
 
+## Mysql 高效性能优化
 
+### 优化Mysql客户端(jdbc)
+
+setResultSetType(ResultSet.TYPE_FORWARD_ONLY)
+setFetchSize（num）
+因为查询sql语句时，很大部分都是从Mysql客户端缓存获取，如果数据量大，会导致OOM
+或者
+用分页
