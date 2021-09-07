@@ -62,3 +62,4 @@ getFactoryMethodName ---->  定义了factory-method的属性， 定义和@Bean
 多个没有@Autowired注解的构造函数，只会调用默认的构造函数，利用的jdk的实例化
 
 
+实现SmartInstantiationAwareBeanPostProcess，然后重写getEarlyBeanReference方法，可以对bean的对象进行修改或者操作
